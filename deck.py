@@ -1,3 +1,7 @@
+"""
+This module contains the Deck and Card classes that
+control the logic of the game
+"""
 class Deck():
     """
     Represents a deck of playing cards
@@ -29,3 +33,12 @@ class Card():
         
     def __str__(self):
         return (self.rank + " of " + self.suit)
+    
+    def value(self):
+        if(self.rank == 'Ace'):
+            return 11
+        elif(self.rank in ["Jack", "Queen", "King"]):
+            return 10
+        else:
+            return int(self.rank)
+            

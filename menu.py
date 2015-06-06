@@ -1,4 +1,7 @@
-from kivy.uix.screenmanager import Screen
+"""
+This module contains the different menu screen widgets
+"""
+
 from kivy.uix.widget import Widget
 from kivy.core.window import Window
 from kivy.uix.button import Button
