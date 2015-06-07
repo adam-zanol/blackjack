@@ -6,9 +6,9 @@ class Deck():
     """
     Represents a deck of playing cards
     """
-    suit_names = ["Clubs", "Diamonds", "Hearts", "Spades"]
-    rank_names = ["Ace", "2", "3", "4", "5", "6", "7", 
-              "8", "9", "10", "Jack", "Queen", "King"]
+    suit_names = ["clubs", "diamonds", "hearts", "spades"]
+    rank_names = ["ace", "2", "3", "4", "5", "6", "7", 
+              "8", "9", "10", "jack", "queen", "king"]
     cards = []
     def __init__(self):
         #Create all the cards
@@ -35,9 +35,9 @@ class Card():
         return (self.rank + " of " + self.suit)
     
     def value(self):
-        if(self.rank == 'Ace'):
+        if(self.rank == 'ace'):
             return 11
-        elif(self.rank in ["Jack", "Queen", "King"]):
+        elif(self.rank in ["jack", "queen", "king"]):
             return 10
         else:
             return int(self.rank)

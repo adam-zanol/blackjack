@@ -47,7 +47,7 @@ class SmartMenu(Widget):
     #self.colorWindow()
         self.addButtons()
 class MainMenu(SmartMenu):
-    buttonList = [ 'Play', 'Settings']
+    buttonList = [ 'Play', 'Leaderboards','Settings']
     def __init__(self,**kwargs):
         super(MainMenu, self).__init__(**kwargs)
         #Create the layout

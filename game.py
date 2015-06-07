@@ -51,7 +51,7 @@ class HandView(FloatLayout):
     cards_value = 0
     def __init__(self, **kwargs):
         super(HandView, self).__init__(**kwargs)  
-        self.grid = FloatLayout(width = Window.width, spacing = -Window.width/2)
+        self.grid = FloatLayout(width = Window.width,height = Window.height)
         self.value_lbl = Label(text = '0',font_size = Window.width*0.03)
        
     def add_card(self, card):
@@ -63,6 +63,10 @@ class HandView(FloatLayout):
         self.value_lbl.text = str(self.value)
         print(self.value)
 class PlayerView(HandView):
+    """
+    The player view class controls the players cards and interactions
+    It also displays the players cards
+    """
     cards = []
     money = 0
     hit_btn = 0
@@ -90,20 +94,27 @@ class PlayerView(HandView):
         
         #Bind the buttons
         self.hit_btn.bind(on_release = self.hit)
-        
+        self.stay_btn.bind(on_release = self.stay)
         self.value_lbl.pos_hint = {'x':0 ,'y': -0.05}
         
         self.add_widget(self.value_lbl)
+        
     def hit(self,instance):
         Clock.schedule_once(self.parent.parent.add_to_player)
+    def stay(self,instance):
+        # Disable the users buttons
+        for btn in self.player_btns.children:
+            btn.disabled = True
+        
+        #Begin dealer draw
         
     def add_card(self,card = 0):
         self.cards.append(card)
         print(card)
-        tmp_image = CardImage(source = 'images/card.png',y = -Window.height*(.2))
+        tmp_image = CardImage(source = 'images/'+card.rank+card.suit+'.png',y = Window.height*(.15),size_hint = (0.25,0.25))
         tmp_image.x += 1000
         self.grid.add_widget(tmp_image)
-        anim = Animation(x = Window.width/4*len(self.cards)-Window.width/2,duration = 0.2)
+        anim = Animation(x = (Window.width/2-Window.width/2)+ tmp_image.width*len(self.cards) *Window.width/900,duration = 0.2)
         anim.start(tmp_image)
         
         if (len(self.cards) > 1):
@@ -111,6 +122,9 @@ class PlayerView(HandView):
             self.stay_btn.disabled = False
             self.double_down_btn.disabled = False
         self.calculate_value()
+        if self.value >20:
+            for btn in self.player_btns.children:
+                btn.disabled = True
     
         
 class DealerView(HandView):
@@ -130,12 +144,12 @@ class DealerView(HandView):
         self.cards.append(card)
         print(card)
         if(len(self.cards) == 1):
-            tmp_image = CardImage(source = 'images/blank.png',y = Window.height/4)
+            tmp_image = CardImage(source = 'images/blank.png',y = Window.height*(.65),size_hint = (0.25,0.25))
         else:
-            tmp_image = CardImage(source = 'images/2spades.png',y = Window.height/4)
+            tmp_image = CardImage(source = 'images/'+card.rank+card.suit+'.png',y = Window.height*(.65),size_hint = (0.25,0.25))
         tmp_image.x += 1000
         self.grid.add_widget(tmp_image)
-        anim = Animation(x = Window.width/4*len(self.cards)-Window.width/2,duration = 0.2)
+        anim = Animation(x = (Window.width/2-Window.width/2)+ (tmp_image.width*len(self.cards))*Window.width/900,duration = 0.2)
         anim.start(tmp_image)
         
 class CardImage(Image):
@@ -148,7 +162,7 @@ class Game(Screen):
     def __init__(self, **kwargs):
         super(Game, self).__init__(**kwargs)
         #Create 4 decks
-        self.toucher = Touch_handler()
+        self.toucher = Touch_Handler()
         self.add_widget(self.toucher)
         for _ in range(4):
             tmp_deck = Deck()
@@ -182,12 +196,16 @@ class Game(Screen):
         pass
     
     
-class Touch_handler(Layout):
+class Touch_Handler(Layout):
+    """
+    The touch handler class allows the user to use gestures
+    instead of the buttons to hit, stay, and surrender
+    """
     def __init__(self, **kwargs):
-        super(Touch_handler, self).__init__(**kwargs)
+        super(Touch_Handler, self).__init__(**kwargs)
         size = (Window.width, Window.height)
     def on_touch_down(self,touch):
-        if touch.is_double_tap:
+        if touch.is_double_tap and self.parent.game_layout.player.hit_btn.disabled == False:
             self.parent.game_layout.player.hit(0)
     def on_touch_move(self, touch):
         print('The touch is at position', touch.pos)

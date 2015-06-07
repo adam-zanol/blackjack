@@ -75,5 +75,7 @@ if __name__ == '__main__':
    
     Config.set('graphics', 'height', '960');
     Config.set('graphics', 'width', '720');
-    Config.write()
+    Config.set('graphics', 'height', '500');
+    #Config.set('graphics', 'width', '300');
+    #Config.write()
     MyApp().run()
