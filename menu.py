@@ -16,9 +16,9 @@ class MyButton(Button):
     def __init__(self, **kwargs):
         super(MyButton, self).__init__(**kwargs)
         self.font_size = Window.width*0.05
-        self.color = [0,0,0,1]
-        self.background_down = "buttons/white_button.png"
-        self.background_normal = "buttons/red_button.png"
+        self.background_color = [1,0,0,1]
+        #self.background_down = "buttons/white_button.png"
+        #self.background_normal = "buttons/red_button.png"
         
 class SmartMenu(Widget):
     """"
@@ -35,7 +35,7 @@ class SmartMenu(Widget):
     def callback(self,instance):
         print('The button %s is being pressed' % instance.text)
         self.buttonText = instance.text
-        self.dispatch('on_button_release') 
+        self.dispatch('on_button_release')
  
     def addButtons(self):
         for k in self.buttonList:
@@ -56,8 +56,7 @@ class MainMenu(SmartMenu):
         self.layout.height = Window.height/4
         self.layout.x = Window.width/2 - self.layout.width/2
         self.layout.y = (Window.height/2 - self.layout.height/2)-Window.height/10
-        print(Window.width)
-        print(Window.height)
+      
         #Create the buttons
         
         self.add_widget(self.layout)
