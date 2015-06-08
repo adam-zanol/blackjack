@@ -27,9 +27,9 @@ class MyButton(Button):
     def __init__(self, **kwargs):
         super(MyButton, self).__init__(**kwargs)
         self.font_size = Window.width*0.03
-        self.color = [0,0,0,1]
-        self.background_down = "buttons/white_button.png"
-        self.background_normal = "buttons/red_button.png"
+        self.background_color = [1,0,0,1]
+        #self.background_down = "buttons/white_button.png"
+        #self.background_normal = "buttons/red_button.png"
         
 class GameView(FloatLayout):
     player = 0
@@ -69,10 +69,16 @@ class PlayerView(HandView):
     """
     cards = []
     money = 0
+    money_label = 0
+    current_bet_lbl = 0
+    placed_bet = 100
+    placed_bet_lbl = 0
     hit_btn = 0
     stay_btn = 0
     double_down_btn = 0
-    surrender_btn = 0 
+    surrender_btn = 0
+    place_bet_btn = 0
+    
     def __init__(self, **kwargs):
         super(PlayerView, self).__init__(**kwargs)
         
@@ -82,6 +88,7 @@ class PlayerView(HandView):
         self.stay_btn = MyButton(text = 'Stay')
         self.double_down_btn = MyButton(text = 'Double Down')
         self.surrender_btn = MyButton(text = 'Surrender')
+        self.place_bet_btn = MyButton(text = 'Place Bet',pos_hint = {'x': .1 ,'y': .1}, size_hint = (.80,.05))
         self.player_btns.add_widget(self.hit_btn)
         self.player_btns.add_widget(self.stay_btn)
         self.player_btns.add_widget(self.double_down_btn)
@@ -96,13 +103,35 @@ class PlayerView(HandView):
         self.hit_btn.bind(on_release = self.hit)
         self.stay_btn.bind(on_release = self.stay)
         self.value_lbl.pos_hint = {'x':0 ,'y': -0.05}
-        
-        
-        #money and current bet lables
-        
+        self.place_bet_btn.bind(on_release = self.place_bet)
+        #Betting buttons
+        self.up_bet_btn = MyButton(text = '>',pos_hint = {'x': .7 ,'y': 0}, size_hint = (.2,.1))
+        self.down_bet_btn = MyButton(text = '<',pos_hint = {'x':.1 ,'y': 0}, size_hint = (.2,.1))
+        self.up_bet_btn.bind(on_release = self.update_bet)
+        self.down_bet_btn.bind(on_release = self.update_bet)
+        self.current_bet_lbl = Label(text = '$100',pos_hint = {'x':0 ,'y': -.45})
+        self.current_bet = 100
+        self.add_widget(self.up_bet_btn)
+        self.add_widget(self.down_bet_btn)
+        self.add_widget(self.current_bet_lbl)
+        self.add_widget(self.place_bet_btn)
+        #money and current bet labels
+        self.money = 10000
+        self.money_label = Label(text = '$' + str(self.money),pos_hint = {'x':0 ,'y': .45})
+        self.placed_bet_lbl = Label(text = '$' + str(self.placed_bet),pos_hint = {'x':-.3 ,'y': -.05})
+        self.add_widget(self.money_label)
         self.add_widget(self.value_lbl)
+        self.add_widget(self.placed_bet_lbl)
+        
     def update_bet(self,instance):
-        pass
+        print(instance.text)
+        if(instance.text == '<' and self.current_bet > 100):
+            self.current_bet -= 100
+            self.current_bet_lbl.text = '$' + str(self.current_bet)
+        elif (instance.text == '>'):
+            self.current_bet += 100
+            self.current_bet_lbl.text = '$' + str(self.current_bet)
+            
    
     def hit(self,instance):
         Clock.schedule_once(self.parent.parent.add_to_player)
@@ -113,7 +142,10 @@ class PlayerView(HandView):
         
         #Begin dealer draw
         Clock.schedule_once(self.parent.parent.begin_dealer)
-        
+    def place_bet(self,instance):
+        self.placed_bet = self.current_bet
+        self.placed_bet_lbl.text = self.current_bet_lbl.text
+        self.parent.parent.start_round()
     def add_card(self,card = 0):
         self.cards.append(card)
         print(card)
@@ -128,7 +160,7 @@ class PlayerView(HandView):
             self.stay_btn.disabled = False
             self.double_down_btn.disabled = False
         self.calculate_value()
-        if self.value >20:
+        if self.value >21:
             for btn in self.player_btns.children:
                 btn.disabled = True
             
@@ -147,6 +179,7 @@ class DealerView(HandView):
         self.value_lbl.pos_hint = {'x':0 ,'y': 0.1}
         
         self.add_widget(self.value_lbl)
+        
     def add_card(self,card = 0):
         self.cards.append(card)
         print(card)
@@ -160,15 +193,7 @@ class DealerView(HandView):
         self.grid.add_widget(tmp_image)
         anim = Animation(x = (Window.width/2-Window.width/2)+ (tmp_image.width*len(self.cards))*Window.width/900,duration = 0.2)
         anim.start(tmp_image)
-    def dealer_control(self,card):
-        #show the dealers first card
-        self.dealer_card.source = 'images/'+self.cards[0].rank+self.cards[0].suit+'.png'
-        #show the 
-        self.calculate_value()
-        
-        while(self.value <17 or self.value > 20):
-            self.add_card(card)
-            self.calculate_value()
+
     def dealer_draw(self,card):
         pass
 class CardImage(Image):
@@ -200,11 +225,11 @@ class Game(Screen):
         #deal two cards to player and 2 cards to dealer
         for btn in self.game_layout.player.player_btns.children:
             btn.disabled = True
-        Clock.schedule_once(self.add_to_dealer,1)
-        Clock.schedule_once(self.add_to_player,2)
-        Clock.schedule_once(self.add_to_dealer,3)
-        Clock.schedule_once(self.add_to_player,4)     
-          
+       
+        Clock.schedule_once(self.add_to_player,1)
+        Clock.schedule_once(self.add_to_dealer,2)
+        Clock.schedule_once(self.add_to_player,3)     
+        Clock.schedule_once(self.add_to_dealer,4) 
     def add_to_dealer(self,delay):
         self.game_layout.dealer.add_card(self.complete_deck.pop())
     def add_to_player(self,delay):
@@ -219,15 +244,20 @@ class Game(Screen):
         self.game_layout.dealer.calculate_value()
         
         # dealer deals to self until their hand is greater than 16
-        while(self.game_layout.dealer.value < 16):
+        while(self.game_layout.dealer.value < 17):
             self.game_layout.dealer.add_card(card)
             self.game_layout.dealer.calculate_value()
             card = self.complete_deck.pop()
         
-        
-    def end_round(self):
+        Clock.schedule_once(self.end_round,3)
+    def end_round(self,instance):
         # See who won and update players value
-        pass
+        self.game_layout.player.cards.clear()
+        self.game_layout.dealer.cards.clear()
+        self.remove_widget(self.game_layout)
+        self.game_layout = GameView()
+        self.add_widget(self.game_layout)
+        self.start_round()
 class Touch_Handler(Layout):
     """
     The touch handler class allows the user to use gestures
