@@ -97,8 +97,13 @@ class PlayerView(HandView):
         self.stay_btn.bind(on_release = self.stay)
         self.value_lbl.pos_hint = {'x':0 ,'y': -0.05}
         
-        self.add_widget(self.value_lbl)
         
+        #money and current bet lables
+        
+        self.add_widget(self.value_lbl)
+    def update_bet(self,instance):
+        pass
+   
     def hit(self,instance):
         Clock.schedule_once(self.parent.parent.add_to_player)
     def stay(self,instance):
@@ -107,6 +112,7 @@ class PlayerView(HandView):
             btn.disabled = True
         
         #Begin dealer draw
+        Clock.schedule_once(self.parent.parent.begin_dealer)
         
     def add_card(self,card = 0):
         self.cards.append(card)
@@ -125,10 +131,11 @@ class PlayerView(HandView):
         if self.value >20:
             for btn in self.player_btns.children:
                 btn.disabled = True
-    
+            
         
 class DealerView(HandView):
     cards = []
+    dealer_card = 0
     def __init__(self,**kwargs):
         super(DealerView, self).__init__(**kwargs)
         
@@ -140,18 +147,30 @@ class DealerView(HandView):
         self.value_lbl.pos_hint = {'x':0 ,'y': 0.1}
         
         self.add_widget(self.value_lbl)
-    def add_card(self,card):
+    def add_card(self,card = 0):
         self.cards.append(card)
         print(card)
         if(len(self.cards) == 1):
             tmp_image = CardImage(source = 'images/blank.png',y = Window.height*(.65),size_hint = (0.25,0.25))
+            self.dealer_card = tmp_image
         else:
             tmp_image = CardImage(source = 'images/'+card.rank+card.suit+'.png',y = Window.height*(.65),size_hint = (0.25,0.25))
+            
         tmp_image.x += 1000
         self.grid.add_widget(tmp_image)
         anim = Animation(x = (Window.width/2-Window.width/2)+ (tmp_image.width*len(self.cards))*Window.width/900,duration = 0.2)
         anim.start(tmp_image)
+    def dealer_control(self,card):
+        #show the dealers first card
+        self.dealer_card.source = 'images/'+self.cards[0].rank+self.cards[0].suit+'.png'
+        #show the 
+        self.calculate_value()
         
+        while(self.value <17 or self.value > 20):
+            self.add_card(card)
+            self.calculate_value()
+    def dealer_draw(self,card):
+        pass
 class CardImage(Image):
     def __init__(self,s=0,r=0, **kwargs):
         super(CardImage, self).__init__(**kwargs)
@@ -164,6 +183,7 @@ class Game(Screen):
         #Create 4 decks
         self.toucher = Touch_Handler()
         self.add_widget(self.toucher)
+        # playing with 4 decks
         for _ in range(4):
             tmp_deck = Deck()
             for card in tmp_deck.cards:
@@ -173,9 +193,9 @@ class Game(Screen):
         
         # Shuffle the deck
         shuffle(self.complete_deck)
-        
         self.game_layout = GameView()
         self.add_widget(self.game_layout)
+        
     def start_round(self):
         #deal two cards to player and 2 cards to dealer
         for btn in self.game_layout.player.player_btns.children:
@@ -183,19 +203,31 @@ class Game(Screen):
         Clock.schedule_once(self.add_to_dealer,1)
         Clock.schedule_once(self.add_to_player,2)
         Clock.schedule_once(self.add_to_dealer,3)
-        Clock.schedule_once(self.add_to_player,4)
-        
-     
-        
+        Clock.schedule_once(self.add_to_player,4)     
+          
     def add_to_dealer(self,delay):
         self.game_layout.dealer.add_card(self.complete_deck.pop())
     def add_to_player(self,delay):
         self.game_layout.player.add_card(self.complete_deck.pop())
- 
+    def begin_dealer(self,delay):
+        
+        card = self.complete_deck.pop()
+        
+        #show the dealers first card
+        self.game_layout.dealer.dealer_card.source = 'images/'+self.game_layout.dealer.cards[0].rank+self.game_layout.dealer.cards[0].suit+'.png'
+        #show the dealers numerical value
+        self.game_layout.dealer.calculate_value()
+        
+        # dealer deals to self until their hand is greater than 16
+        while(self.game_layout.dealer.value < 16):
+            self.game_layout.dealer.add_card(card)
+            self.game_layout.dealer.calculate_value()
+            card = self.complete_deck.pop()
+        
+        
     def end_round(self):
+        # See who won and update players value
         pass
-    
-    
 class Touch_Handler(Layout):
     """
     The touch handler class allows the user to use gestures
