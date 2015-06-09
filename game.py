@@ -19,6 +19,10 @@ from kivy.uix.layout import Layout
 
 from kivy.graphics import Rectangle
 from kivy.graphics import Color
+from kivy.event import EventDispatcher
+
+
+
 class MyButton(Button):
     """
     My Button class inherits a kivy button and creates uniform buttons
@@ -43,6 +47,8 @@ class GameView(FloatLayout):
         #dealer portion of game screen
         self.dealer = DealerView()
         self.add_widget(self.dealer)
+        
+        
         
 class HandView(FloatLayout):
     
@@ -69,7 +75,7 @@ class PlayerView(HandView):
     """
     cards = []
     money = 0
-    money_label = 0
+    money_lbl = Label()
     current_bet_lbl = 0
     placed_bet = 100
     placed_bet_lbl = 0
@@ -78,6 +84,7 @@ class PlayerView(HandView):
     double_down_btn = 0
     surrender_btn = 0
     place_bet_btn = 0
+    split_btn = 0
     
     def __init__(self, **kwargs):
         super(PlayerView, self).__init__(**kwargs)
@@ -87,6 +94,7 @@ class PlayerView(HandView):
         self.hit_btn = MyButton(text = 'Hit')
         self.stay_btn = MyButton(text = 'Stay')
         self.double_down_btn = MyButton(text = 'Double Down')
+        self.split_btn = MyButton(text = 'Split')
         self.surrender_btn = MyButton(text = 'Surrender')
         self.place_bet_btn = MyButton(text = 'Place Bet',pos_hint = {'x': .1 ,'y': .1}, size_hint = (.80,.05))
         self.player_btns.add_widget(self.hit_btn)
@@ -109,7 +117,7 @@ class PlayerView(HandView):
         self.down_bet_btn = MyButton(text = '<',pos_hint = {'x':.1 ,'y': 0}, size_hint = (.2,.1))
         self.up_bet_btn.bind(on_release = self.update_bet)
         self.down_bet_btn.bind(on_release = self.update_bet)
-        self.current_bet_lbl = Label(text = '$100',pos_hint = {'x':0 ,'y': -.45})
+        self.current_bet_lbl = Label(text = '$100',pos_hint = {'x':0 ,'y': -.45},font_size = Window.width*0.05)
         self.current_bet = 100
         self.add_widget(self.up_bet_btn)
         self.add_widget(self.down_bet_btn)
@@ -117,12 +125,17 @@ class PlayerView(HandView):
         self.add_widget(self.place_bet_btn)
         #money and current bet labels
         self.money = 10000
-        self.money_label = Label(text = '$' + str(self.money),pos_hint = {'x':0 ,'y': .45})
-        self.placed_bet_lbl = Label(text = '$' + str(self.placed_bet),pos_hint = {'x':-.3 ,'y': -.05})
-        self.add_widget(self.money_label)
+        self.money_lbl = Label(text = '$' + str(self.money),pos_hint = {'x':0 ,'y': .45},font_size = Window.width*0.05)
+        self.placed_bet_lbl = Label(text = '$' + str(self.placed_bet),pos_hint = {'x':-.3 ,'y': -.05},font_size = Window.width*0.05)
+        self.add_widget(self.money_lbl)
         self.add_widget(self.value_lbl)
         self.add_widget(self.placed_bet_lbl)
+      
+        #bind the money
         
+     
+        for btn in self.player_btns.children:
+            btn.disabled = True
     def update_bet(self,instance):
         print(instance.text)
         if(instance.text == '<' and self.current_bet > 100):
@@ -131,8 +144,18 @@ class PlayerView(HandView):
         elif (instance.text == '>'):
             self.current_bet += 100
             self.current_bet_lbl.text = '$' + str(self.current_bet)
+         
+         
             
-   
+    def update_money(self,result):
+        if(result == 'lose'):
+            self.money -= self.placed_bet
+        elif(result == 'win'):
+            self.money += self.placed_bet
+        return self.money
+    def set_money(self,money):
+        self.money =  money
+        self.money_lbl.text = '$' + str(self.money)
     def hit(self,instance):
         Clock.schedule_once(self.parent.parent.add_to_player)
     def stay(self,instance):
@@ -145,6 +168,9 @@ class PlayerView(HandView):
     def place_bet(self,instance):
         self.placed_bet = self.current_bet
         self.placed_bet_lbl.text = self.current_bet_lbl.text
+        self.place_bet_btn.disabled = True
+        self.up_bet_btn.disabled = True
+        self.down_bet_btn.disabled = True
         self.parent.parent.start_round()
     def add_card(self,card = 0):
         self.cards.append(card)
@@ -163,8 +189,11 @@ class PlayerView(HandView):
         if self.value >21:
             for btn in self.player_btns.children:
                 btn.disabled = True
-            
-        
+            Clock.schedule_once(self.parent.parent.end_round,3)
+        if self.value == 21:
+            for btn in self.player_btns.children:
+                btn.disabled = True
+            Clock.schedule_once(self.parent.parent.begin_dealer)
 class DealerView(HandView):
     cards = []
     dealer_card = 0
@@ -201,8 +230,12 @@ class CardImage(Image):
         super(CardImage, self).__init__(**kwargs)
         
 class Game(Screen):
+    """
+    This class controls the main game
+    """
     complete_deck = []
     game_layout = 0
+    winner = 'None'
     def __init__(self, **kwargs):
         super(Game, self).__init__(**kwargs)
         #Create 4 decks
@@ -252,12 +285,32 @@ class Game(Screen):
         Clock.schedule_once(self.end_round,3)
     def end_round(self,instance):
         # See who won and update players value
+        money = self.check_winner()
+        #Set up the new round
         self.game_layout.player.cards.clear()
         self.game_layout.dealer.cards.clear()
         self.remove_widget(self.game_layout)
         self.game_layout = GameView()
+        print(money)
+        self.game_layout.player.set_money(money)
         self.add_widget(self.game_layout)
-        self.start_round()
+        self.game_layout.player.place_bet_btn.disbaled = False
+        self.game_layout.player.up_bet_btn.disbaled = False
+        self.game_layout.player.down_bet_btn.disbaled = False
+        
+    def check_winner(self):
+        if (self.game_layout.player.value > 21):
+            self.winner = 'dealer'
+            return self.game_layout.player.update_money('lose')
+        elif (self.game_layout.dealer.value > 21):
+            self.winner = 'player'
+            return self.game_layout.player.update_money('win')
+        elif (self.game_layout.player.value > self.game_layout.dealer.value):
+            self.winner = 'player'
+            return self.game_layout.player.update_money('win')
+        else:
+            return (self.game_layout.player.money)
+       
 class Touch_Handler(Layout):
     """
     The touch handler class allows the user to use gestures
@@ -265,7 +318,7 @@ class Touch_Handler(Layout):
     """
     def __init__(self, **kwargs):
         super(Touch_Handler, self).__init__(**kwargs)
-        size = (Window.width, Window.height)
+        self.size = (Window.width, Window.height)
     def on_touch_down(self,touch):
         if touch.is_double_tap and self.parent.game_layout.player.hit_btn.disabled == False:
             self.parent.game_layout.player.hit(0)
